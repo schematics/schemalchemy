@@ -1,0 +1,3 @@
+[submodule "external/sqlalchemy"]
+	path = external/sqlalchemy
+	url = https://github.com/zzzeek/sqlalchemy.git
