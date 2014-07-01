@@ -3,4 +3,4 @@
 	url = https://github.com/zzzeek/sqlalchemy.git
 [submodule "external/schematics"]
 	path = external/schematics
-	url = https://github.com/j2labs/schematics.git
+	url = https://github.com/schematics/schematics.git
