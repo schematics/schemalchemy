@@ -7,17 +7,16 @@ SchemAlchemy = Schematics + SQLAlchemy
 
 0. Import schemalchemy (before schematics)
 1. Inherit from schemalchemy `Base`
-2. Define the Schematics fields
-3. Define the SQLAlchemy columns (or provide a Table)
-4. Use the same name for the columns that map to the fields, plus a prefix
-5. Set `__mapper_args__['column_prefix']` to that prefix
+2. Define the SQLAlchemy columns (or provide a Table)
+3. Define the Schematics fields
+
+Note: Column property names must be '_' + field_name (see about SQLAlchemy
+    `column_prefix` if you need to customize the prefix).
 
 
 ## Example
 
     class Person(Base):
-
-        __mapper_args__ = {'column_prefix': '_'}  # required by SchemAlchemy
 
         _id = Column('id', Integer, primary_key=True)
         _name = Column('name', String(50))
@@ -35,22 +34,15 @@ from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 
 class SchemAlchemyFieldDescriptor(schematics.models.FieldDescriptor):
-
     def __set__(self, instance, value):
         """
         Field setter override to set same value into table column properties.
 
-        Assumes the column properties are named as:
-            `column_prefix` + `field_name`
-
-        Relies on the `column_prefix` to be defined in the `__mapper_args__`
-        dict of the instance to set the column properties.
-
         """
         super(SchemAlchemyFieldDescriptor, self).__set__(instance, value)
-        prefix = instance.get('__mapper_args__', {}).get('column_prefix')
-        if prefix:
-            setattr(instance, prefix + self.name, instance._data[self.name])
+        if hasattr(self, 'column_name'):
+            instance_dict = orm.base.instance_dict(instance)
+            instance_dict[self.column_name] = getattr(instance, self.name)
 
 
 class SchemAlchemyModelMeta(schematics.models.ModelMeta, DeclarativeMeta):
@@ -61,15 +53,50 @@ class SchemAlchemyModelMeta(schematics.models.ModelMeta, DeclarativeMeta):
     same methods.
 
     """
-    pass
+
+    def __init__(cls, classname, bases, dict_):
+        """
+        Map the Schematics fields to the SQLAlchemy columns using synonym
+        properties.
+
+        """
+        super(SchemAlchemyModelMeta, cls).__init__(classname, bases, dict_)
+        if not hasattr(cls, '__mapper__'):
+            return
+        mapper = cls.__mapper__
+        for field_name in cls._fields:
+            column_name = (mapper.column_prefix or '') + field_name
+            if not column_name in mapper.column_attrs:
+                continue
+            field_descriptor = cls.__dict__.get(field_name)
+            field_descriptor.column_name = column_name
+            field_synonym = orm.synonym(column_name, descriptor=field_descriptor)
+            mapper.add_property(field_name, field_synonym)
+
+
+def _reconstructor(self):
+    """
+    Call Schematics __init__ and trigger the descriptors for all mapped fields
+    when loading from database.
+
+    """
+    self.__init__()
+    cls = self.__class__
+    for field_name in self._fields:
+        field_descriptor = cls.__dict__.get(field_name)
+        if not hasattr(field_descriptor, 'column_name'):
+            continue
+        column_name = field_descriptor.column_name
+        value = orm.base.instance_dict(self).get(column_name)
+        setattr(self, field_name, value)
 
 
 # Schematics monkeypatching
 
 schematics.models.FieldDescriptor = SchemAlchemyFieldDescriptor
 schematics.models.ModelMeta = SchemAlchemyModelMeta
-schematics.models.Model._reconstructor = orm.reconstructor(
-    schematics.models.Model.__init__.im_func)  # call init when loaded from db
+schematics.models.Model.__mapper_args__ = {'column_prefix': '_'}
+schematics.models.Model._reconstructor = orm.reconstructor(_reconstructor)
 
 
 # For model definition inherit from the `Base` class below instead of `Model`
