@@ -18,6 +18,8 @@ Note: Column property names must be '_' + field_name (see about SQLAlchemy
 
     class Person(Base):
 
+        __tablename__ = 'person'
+
         _id = Column('id', Integer, primary_key=True)
         _name = Column('name', String(50))
 
