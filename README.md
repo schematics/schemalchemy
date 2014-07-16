@@ -17,6 +17,11 @@ Note: Column property names must be '_' + field_name (see about SQLAlchemy
 
 ## Example
 
+    from schemalchemy import Base
+    from schematics.types import IntType, StringType
+    from sqlalchemy import Column, Integer, String
+
+
     class Person(Base):
 
         _id = Column('id', Integer, primary_key=True)
