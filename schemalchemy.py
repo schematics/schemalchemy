@@ -68,7 +68,7 @@ class SchemAlchemyModelMeta(schematics.models.ModelMeta, DeclarativeMeta):
         mapper = cls.__mapper__
         for field_name in cls._fields:
             column_name = (mapper.column_prefix or '') + field_name
-            if not column_name in mapper.column_attrs:
+            if not column_name in mapper.all_orm_descriptors:
                 continue
             field_descriptor = cls.__dict__.get(field_name)
             field_descriptor.column_name = column_name
