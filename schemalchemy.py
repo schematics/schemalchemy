@@ -43,8 +43,7 @@ class SchemAlchemyFieldDescriptor(schematics.models.FieldDescriptor):
         """
         super(SchemAlchemyFieldDescriptor, self).__set__(instance, value)
         if hasattr(self, 'column_name'):
-            instance_dict = orm.base.instance_dict(instance)
-            instance_dict[self.column_name] = getattr(instance, self.name)
+            setattr(instance, self.column_name, getattr(instance, self.name))
 
 
 class SchemAlchemyModelMeta(schematics.models.ModelMeta, DeclarativeMeta):

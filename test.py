@@ -111,6 +111,28 @@ def test_load_data(session):
     print '\tCompany', c.serialize()
 
 
+def test_update_data(Session):
+    session = Session()
+    p = session.query(Person).first()
+    c = session.query(Company).first()
+    p.id = 10
+    c.id = 20
+    p._company_id = c.id
+    p.name = 'Paul E.'
+    c.name = 'Another'
+    p_serialized = p.serialize()
+    c_serialized = c.serialize()
+    session.commit()
+    session = Session()
+    p = session.query(Person).first()
+    c = session.query(Company).first()
+    assert_equal(p_serialized, p.serialize())
+    assert_equal(c_serialized, c.serialize())
+    print 'Updated:'
+    print '\tPerson ', p.serialize()
+    print '\tCompany', c.serialize()
+
+
 def assert_equal(v1, v2):
     assert v1 == v2, '%s != %s' % (v1, v2)
 
@@ -123,7 +145,8 @@ if __name__ == '__main__':
     import os
     if os.path.exists(DATABASE):
         os.remove(DATABASE)
-    session = init_db()
-    test_insert_data(session())
-    test_load_data(session())
+    Session = init_db()
+    test_insert_data(Session())
+    test_load_data(Session())
+    test_update_data(Session)
     print 'All tests OK'
