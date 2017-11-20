@@ -109,8 +109,9 @@ class SchemAlchemyModel(schematics.models.Model):
 
     def _set_mapped_column_values(self):
         for field_name, column_name in self._iter_column_fields():
-            instance_dict = orm.base.instance_dict(self)
-            instance_dict[column_name] = getattr(self, field_name)
+            if hasattr(self, field_name):
+                instance_dict = orm.base.instance_dict(self)
+                instance_dict[column_name] = getattr(self, field_name)
 
 
 # Schematics monkeypatching
@@ -126,4 +127,3 @@ Base = declarative_base(
     cls=SchemAlchemyModel,
     metaclass=SchemAlchemyModelMeta,
     constructor=None)
-
